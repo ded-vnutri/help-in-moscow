@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 
 from aiogram import F, Router
@@ -37,10 +38,16 @@ log = logging.getLogger(__name__)
 
 TOPIC_CACHE_SECONDS = 6 * 60 * 60
 TELEGRAM_LIMIT = 4000
+ROUTE_WAIT_SECONDS = 10 * 60  # how long the bot waits for "from — to" after the route button
+# "Red Square — MSU", "from Red Square to MSU", "Кремль -> ВДНХ", "от Кремля до ВДНХ"
+ROUTE_SPLIT = re.compile(r"\s*(?:—|–|->|→|=>|\s-\s|\bto\b|\bдо\b)\s*", re.IGNORECASE)
+ROUTE_FROM = re.compile(r"^\s*(?:from|от|из|с)\s+", re.IGNORECASE)
+ROUTE_MODES = [("route_transit", "mt"), ("route_walk", "pd"), ("route_car", "auto")]
 
 # Button label (in any language) -> what it does
 TOPIC_BUTTONS = all_labels(lambda lang: [(topic_label(lang, k), k) for k in TOPICS])
 NEARBY_BUTTONS = all_labels(lambda lang: [(t(lang, "nearby"), "nearby")])
+ROUTE_BUTTONS = all_labels(lambda lang: [(t(lang, "route"), "route")])
 LANGUAGE_BUTTONS = all_labels(lambda lang: [(t(lang, "language"), "language")])
 
 
@@ -53,8 +60,23 @@ def language_keyboard() -> InlineKeyboardMarkup:
 def main_keyboard(lang: str) -> ReplyKeyboardMarkup:
     topics = [KeyboardButton(text=topic_label(lang, k)) for k in TOPICS]
     rows = [topics[i:i + 2] for i in range(0, len(topics), 2)]
-    rows.append([KeyboardButton(text=t(lang, "nearby")), KeyboardButton(text=t(lang, "language"))])
+    rows.append([KeyboardButton(text=t(lang, "nearby")), KeyboardButton(text=t(lang, "route"))])
+    rows.append([KeyboardButton(text=t(lang, "language"))])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def route_keyboard(lang: str, start: dict, end: dict) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
+        text=t(lang, key), url=geo.route_link(start["lat"], start["lon"], end["lat"], end["lon"], mode))]
+        for key, mode in ROUTE_MODES])
+
+
+def split_route(text: str) -> tuple[str | None, str]:
+    """'Red Square — MSU' -> ('Red Square', 'MSU'); 'MSU' -> (None, 'MSU')."""
+    parts = [p.strip(" ,.?!") for p in ROUTE_SPLIT.split(ROUTE_FROM.sub("", text), maxsplit=1)]
+    if len(parts) == 2 and parts[0] and parts[1]:
+        return parts[0], parts[1]
+    return None, parts[-1]
 
 
 def location_keyboard(lang: str) -> ReplyKeyboardMarkup:
@@ -84,6 +106,11 @@ def rating_keyboard(answer_id: int) -> InlineKeyboardMarkup:
 def setup_router(config: Config, db: Database, llm: LLM, transcriber: Transcriber) -> Router:
     router = Router()
     topic_cache: dict[tuple[str, str], tuple[float, str]] = {}
+    route_waiting: dict[int, float] = {}  # user id -> when the route button was pressed
+
+    def waits_for_route(message: Message) -> bool:
+        started = route_waiting.get(message.from_user.id)
+        return started is not None and time.time() - started < ROUTE_WAIT_SECONDS
 
     def user_lang(message_or_query) -> str:
         user = message_or_query.from_user
@@ -188,14 +215,50 @@ def setup_router(config: Config, db: Database, llm: LLM, transcriber: Transcribe
     @router.message(F.text.in_(NEARBY_BUTTONS))
     async def nearby_button(message: Message) -> None:
         lang = user_lang(message)
+        route_waiting.pop(message.from_user.id, None)
         await message.answer(t(lang, "nearby_ask"), reply_markup=location_keyboard(lang))
+
+    @router.message(F.text.in_(ROUTE_BUTTONS))
+    async def route_button(message: Message) -> None:
+        lang = user_lang(message)
+        route_waiting[message.from_user.id] = time.time()
+        await message.answer(t(lang, "route_ask"), reply_markup=location_keyboard(lang))
 
     @router.message(F.location)
     async def location_received(message: Message) -> None:
         lang = user_lang(message)
         db.set_location(message.from_user.id, message.location.latitude, message.location.longitude)
+        if waits_for_route(message):
+            # The location is the start of the route: now we only need where to go.
+            await message.answer(t(lang, "route_dest_ask"), reply_markup=main_keyboard(lang))
+            return
         await message.answer("✅ 📍", reply_markup=main_keyboard(lang))
         await message.answer(t(lang, "nearby_choose"), reply_markup=places_keyboard(lang))
+
+    async def build_route(message: Message, lang: str) -> None:
+        start_text, end_text = split_route(message.text)
+        waiting = await message.answer(t(lang, "thinking"))
+        async with ChatActionSender.find_location(bot=message.bot, chat_id=message.chat.id):
+            if start_text:
+                start = await geo.geocode(start_text, lang, config.proxy_url)
+            else:
+                location = db.get_location(message.from_user.id)
+                start = {"name": t(lang, "route_from_here"), "lat": location[0], "lon": location[1]} if location else None
+            end = await geo.geocode(end_text, lang, config.proxy_url)
+
+        if start is None and not start_text:
+            await waiting.edit_text(t(lang, "route_need_start"))
+            return
+        missing = [text for text, place in ((start_text, start), (end_text, end)) if text and place is None]
+        if missing:
+            await waiting.edit_text(t(lang, "route_not_found").format(place=_escape(missing[0])), parse_mode="HTML")
+            return
+
+        route_waiting.pop(message.from_user.id, None)
+        km = geo.distance_m(start["lat"], start["lon"], end["lat"], end["lon"]) / 1000
+        text = (f"🧭 <b>{_escape(start['name'])}</b>\n→ <b>{_escape(end['name'])}</b>\n\n"
+                f"{t(lang, 'route_distance').format(km=f'{km:.1f}')}\n{t(lang, 'route_choose')}")
+        await waiting.edit_text(text, parse_mode="HTML", reply_markup=route_keyboard(lang, start, end))
 
     @router.callback_query(F.data.startswith("place:"))
     async def place_chosen(query: CallbackQuery) -> None:
@@ -236,6 +299,7 @@ def setup_router(config: Config, db: Database, llm: LLM, transcriber: Transcribe
     @router.message(F.text.in_(TOPIC_BUTTONS))
     async def topic_button(message: Message) -> None:
         lang = user_lang(message)
+        route_waiting.pop(message.from_user.id, None)
         topic = TOPIC_BUTTONS[message.text]
         await answer_with_llm(message, TOPIC_QUESTIONS[topic], lang, cache_key=(topic, lang),
                               search_query=TOPIC_SEARCH[topic])
@@ -286,9 +350,16 @@ def setup_router(config: Config, db: Database, llm: LLM, transcriber: Transcribe
         await message.answer(f"{t(lang, 'voice_heard')} <i>{_escape(text)}</i>", parse_mode="HTML")
         await answer_with_llm(message, text, lang)
 
+    @router.message(Command("route"))
+    async def route_cmd(message: Message) -> None:
+        await route_button(message)
+
     @router.message(F.text)
     async def free_question(message: Message) -> None:
         lang = user_lang(message)
+        if waits_for_route(message) and not message.text.startswith("/"):
+            await build_route(message, lang)
+            return
         await answer_with_llm(message, message.text, lang)
 
     return router

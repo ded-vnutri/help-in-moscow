@@ -1,8 +1,9 @@
-"""Free nearby search on OpenStreetMap data through the Overpass API."""
+"""Free maps on OpenStreetMap data: nearby search (Overpass) and addresses for routes (Nominatim)."""
 
 import asyncio
 import logging
 import math
+import time
 from urllib.parse import quote
 
 import aiohttp
@@ -112,6 +113,49 @@ def search_link(category: str, lat: float, lon: float) -> str:
     return f"https://yandex.ru/maps/?text={quote(YANDEX_QUERIES[category])}&ll={lon},{lat}&z=16"
 
 
-def route_link(from_lat: float, from_lon: float, to_lat: float, to_lon: float) -> str:
-    """Walking route in Yandex Maps (opens the app on a phone)."""
-    return f"https://yandex.ru/maps/?rtext={from_lat},{from_lon}~{to_lat},{to_lon}&rtt=pd"
+def route_link(from_lat: float, from_lon: float, to_lat: float, to_lon: float, mode: str = "pd") -> str:
+    """Route in Yandex Maps (opens the app on a phone): pd walking, mt public transport, auto by car."""
+    return f"https://yandex.ru/maps/?rtext={from_lat},{from_lon}~{to_lat},{to_lon}&rtt={mode}"
+
+
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+MOSCOW_VIEWBOX = "36.8,56.1,38.3,55.1"  # Moscow and the nearest region, airports included
+NOMINATIM_INTERVAL_S = 1.1  # the free server allows one request per second
+_geocode_lock = asyncio.Lock()
+_geocode_last = 0.0
+_geocode_cache: dict[tuple[str, str], dict | None] = {}
+
+
+async def geocode(text: str, lang: str, proxy: str | None = None) -> dict | None:
+    """Find an address or a place in Moscow with OpenStreetMap Nominatim: {"name", "lat", "lon"} or None."""
+    global _geocode_last
+    key = (text.strip().lower(), lang)
+    if key in _geocode_cache:
+        return _geocode_cache[key]
+
+    params = {
+        "q": text, "format": "jsonv2", "limit": "1", "accept-language": f"{lang},ru",
+        "viewbox": MOSCOW_VIEWBOX, "bounded": "1",
+    }
+    headers = {"User-Agent": "HelpInMoscowBot/1.0 (student project)"}
+    async with _geocode_lock:
+        pause = NOMINATIM_INTERVAL_S - (time.monotonic() - _geocode_last)
+        if pause > 0:
+            await asyncio.sleep(pause)
+        try:
+            async with make_session(proxy, timeout=aiohttp.ClientTimeout(total=15), headers=headers) as session:
+                async with session.get(NOMINATIM_URL, params=params) as resp:
+                    data = await resp.json(content_type=None) if resp.status == 200 else []
+        except (aiohttp.ClientError, TimeoutError, ValueError) as e:
+            log.warning("Geocoding %r failed: %s", text, e)
+            return None
+        finally:
+            _geocode_last = time.monotonic()
+
+    place = None
+    if data:
+        # "Red Square, Kitay-gorod, 4, Tverskoy District, Moscow, ..." -> "Red Square, Kitay-gorod"
+        name = ", ".join(data[0]["display_name"].split(", ")[:2])
+        place = {"name": name, "lat": float(data[0]["lat"]), "lon": float(data[0]["lon"])}
+    _geocode_cache[key] = place
+    return place
