@@ -75,7 +75,8 @@ python -m bot
 | --- | --- | --- |
 | `BOT_TOKEN` | Токен от BotFather | обязательно |
 | `OPENROUTER_API_KEY` | Ключ OpenRouter | обязательно |
-| `OPENROUTER_MODEL` | Модель на OpenRouter | `deepseek/deepseek-chat` |
+| `OPENROUTER_MODEL` | Модель на OpenRouter | `deepseek/deepseek-v4-flash` |
+| `REASONING` | Скрытые рассуждения модели | `false` |
 | `WEB_SEARCH` | Платный поиск OpenRouter перед ответом | `false` |
 | `FREE_SEARCH` | Бесплатный поиск DuckDuckGo, если платный выключен | `true` |
 | `VOICE` / `WHISPER_MODEL` | Голосовые сообщения и размер модели | `true` / `base` |

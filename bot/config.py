@@ -19,6 +19,7 @@ class Config:
     openrouter_api_key: str
     model: str
     fallback_model: str | None
+    reasoning: bool
     web_search: bool
     free_search: bool
     voice: bool
@@ -41,8 +42,9 @@ def load_config() -> Config:
     return Config(
         bot_token=token,
         openrouter_api_key=key,
-        model=os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat").strip(),
+        model=os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-v4-flash").strip(),
         fallback_model=os.getenv("OPENROUTER_FALLBACK_MODEL", "").strip() or None,
+        reasoning=_bool("REASONING", False),
         web_search=_bool("WEB_SEARCH", False),
         free_search=_bool("FREE_SEARCH", True),
         voice=_bool("VOICE", True),

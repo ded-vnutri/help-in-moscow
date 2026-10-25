@@ -143,6 +143,9 @@ class LLM:
 
     async def _complete(self, model: str, messages: list[dict]) -> str:
         payload = {"model": model, "messages": messages, "max_tokens": 1000}
+        if not self.config.reasoning:
+            # Hidden reasoning eats the token limit and gives empty or cut-off answers.
+            payload["reasoning"] = {"enabled": False}
         if self.config.web_search:
             payload["plugins"] = [{"id": "web", "max_results": self.config.web_max_results}]
 
