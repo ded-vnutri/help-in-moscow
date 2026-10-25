@@ -18,6 +18,15 @@ class Database:
                 lon REAL,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS answers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                lang TEXT,
+                question TEXT,
+                answer TEXT,
+                rating INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
             CREATE TABLE IF NOT EXISTS usage (
                 day TEXT,
                 user_id INTEGER,
@@ -71,3 +80,35 @@ class Database:
             (day, user_id),
         )
         self.conn.commit()
+
+    def log_answer(self, user_id: int, lang: str, question: str, answer: str) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO answers (user_id, lang, question, answer) VALUES (?, ?, ?, ?)",
+            (user_id, lang, question, answer),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def rate(self, answer_id: int, user_id: int, rating: int) -> None:
+        self.conn.execute(
+            "UPDATE answers SET rating = ? WHERE id = ? AND user_id = ?", (rating, answer_id, user_id)
+        )
+        self.conn.commit()
+
+    def stats(self) -> dict:
+        one = lambda sql, *a: self.conn.execute(sql, a).fetchone()[0]
+        today = date.today().isoformat()
+        return {
+            "users": one("SELECT COUNT(*) FROM users"),
+            "users_today": one("SELECT COUNT(*) FROM users WHERE date(created_at) = ?", today),
+            "questions": one("SELECT COUNT(*) FROM answers"),
+            "questions_today": one("SELECT COUNT(*) FROM answers WHERE date(created_at) = ?", today),
+            "likes": one("SELECT COUNT(*) FROM answers WHERE rating = 1"),
+            "dislikes": one("SELECT COUNT(*) FROM answers WHERE rating = -1"),
+            "languages": self.conn.execute(
+                "SELECT COALESCE(lang, '?'), COUNT(*) FROM users GROUP BY lang ORDER BY 2 DESC"
+            ).fetchall(),
+            "bad": self.conn.execute(
+                "SELECT question FROM answers WHERE rating = -1 ORDER BY id DESC LIMIT 5"
+            ).fetchall(),
+        }

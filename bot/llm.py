@@ -6,6 +6,7 @@ from datetime import date
 
 import aiohttp
 
+from . import search
 from .config import Config
 from .net import make_session
 
@@ -18,8 +19,7 @@ SYSTEM_PROMPT = """You are "Help in Moscow", a friendly Telegram assistant for f
 (students, tourists, interns, new residents) who live in or visit Moscow, Russia. Today is {today}.
 
 Content rules:
-- Reply in {language}. Only if the user clearly writes in a different language, reply in that language.
-- Always give a concrete, practical answer: where to go, what to bring, prices, steps, official \
+{language_rule}- Always give a concrete, practical answer: where to go, what to bring, prices, steps, official \
 websites and apps. Never tell the user to figure it out on their own.
 {sources_rule}- If something changes often (prices, rules), give the current best answer and say briefly what to double-check.
 - In emergencies always put the single emergency number 112 first.
@@ -47,12 +47,22 @@ Format rules:
 - Optionally a last line starting with "🔗 " with 1-2 links as [text](url).
 - At most about 100 words. No tables, no headings with #, no JSON, no code.
 """
+
+
 WEB_RULE = "- Use the web search results for up-to-date facts and add 1-3 links to the most useful sources.\n"
 NO_WEB_RULE = (
     "- Answer from your own knowledge. Do not invent names, prices or rules you are not sure about.\n"
     "- Links: only main pages of well-known sites (https://www.mos.ru, https://www.gosuslugi.ru, "
     "https://mosmetro.ru, operator or shop main pages), never deep links.\n"
 )
+
+
+FREE_WEB_RULE = (
+    "- Below are fresh web search results. Prefer them over your memory for prices, fares, rules "
+    "and names, because your memory may be outdated. Add 1-2 links copied exactly from these results.\n"
+)
+LANGUAGE_RULE = "- Reply in {language}. Only if the user clearly writes in a different language, reply in that language.\n"
+STRICT_LANGUAGE_RULE = "- Always reply in {language}, even though the question below is written in English.\n"
 
 
 class LLMError(Exception):
@@ -78,13 +88,35 @@ class LLM:
         if self.session and not self.session.closed:
             await self.session.close()
 
-    async def ask(self, user_id: int, language: str, question: str, remember: bool = True) -> str:
+    async def ask(
+        self,
+        user_id: int,
+        language: str,
+        question: str,
+        remember: bool = True,
+        strict_language: bool = False,
+        search_query: str | None = None,
+    ) -> str:
+        """Answer a question. Topic buttons pass strict_language, because their question is in English."""
+        context = ""
+        if not self.config.web_search and self.config.free_search:
+            context = await search.web_context(search_query or f"{question} Москва", self.config.proxy_url)
+
+        if self.config.web_search:
+            sources_rule = WEB_RULE
+        elif context:
+            sources_rule = FREE_WEB_RULE
+        else:
+            sources_rule = NO_WEB_RULE
+        language_rule = (STRICT_LANGUAGE_RULE if strict_language else LANGUAGE_RULE).format(language=language)
         system = SYSTEM_PROMPT.format(
             today=date.today().isoformat(),
-            language=language,
-            sources_rule=WEB_RULE if self.config.web_search else NO_WEB_RULE,
+            language_rule=language_rule,
+            sources_rule=sources_rule,
         )
         messages = [{"role": "system", "content": system}]
+        if context:
+            messages.append({"role": "system", "content": f"Web search results ({date.today().isoformat()}):\n\n{context}"})
         if remember:
             messages += list(self.history[user_id])
         messages.append({"role": "user", "content": question})

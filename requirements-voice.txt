@@ -1,0 +1,2 @@
+# Optional: voice messages (speech to text on the server, free)
+faster-whisper==1.2.1

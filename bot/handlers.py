@@ -22,6 +22,7 @@ from .i18n import (
     LANGUAGES,
     PLACE_CATEGORIES,
     TOPIC_QUESTIONS,
+    TOPIC_SEARCH,
     TOPICS,
     all_labels,
     language_name,
@@ -30,6 +31,7 @@ from .i18n import (
     topic_label,
 )
 from .llm import LLM, LLMBusy, markdown_to_telegram_html
+from .voice import Transcriber
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +74,14 @@ def places_keyboard(lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def setup_router(config: Config, db: Database, llm: LLM) -> Router:
+def rating_keyboard(answer_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="👍", callback_data=f"rate:{answer_id}:1"),
+        InlineKeyboardButton(text="👎", callback_data=f"rate:{answer_id}:-1"),
+    ]])
+
+
+def setup_router(config: Config, db: Database, llm: LLM, transcriber: Transcriber) -> Router:
     router = Router()
     topic_cache: dict[tuple[str, str], tuple[float, str]] = {}
 
@@ -84,27 +93,31 @@ def setup_router(config: Config, db: Database, llm: LLM) -> Router:
         code = (user.language_code or "").split("-")[0]
         return code if code in LANGUAGES else DEFAULT_LANG
 
-    async def send_answer(message: Message, placeholder: Message | None, answer: str, lang: str) -> None:
+    async def send_answer(message: Message, placeholder: Message | None, question: str, answer: str,
+                          lang: str) -> None:
+        answer_id = db.log_answer(message.from_user.id, lang, question, answer)
+        markup = rating_keyboard(answer_id)
         text = markdown_to_telegram_html(answer)[:TELEGRAM_LIMIT]
         try:
             if placeholder:
-                await placeholder.edit_text(text, parse_mode="HTML", disable_web_page_preview=True)
+                await placeholder.edit_text(text, parse_mode="HTML", disable_web_page_preview=True,
+                                            reply_markup=markup)
             else:
-                await message.answer(text, parse_mode="HTML", disable_web_page_preview=True,
-                                     reply_markup=main_keyboard(lang))
+                await message.answer(text, parse_mode="HTML", disable_web_page_preview=True, reply_markup=markup)
         except TelegramBadRequest:
             # The model produced something Telegram can't parse: send it as plain text.
             plain = answer[:TELEGRAM_LIMIT]
             if placeholder:
-                await placeholder.edit_text(plain, disable_web_page_preview=True)
+                await placeholder.edit_text(plain, disable_web_page_preview=True, reply_markup=markup)
             else:
-                await message.answer(plain, disable_web_page_preview=True, reply_markup=main_keyboard(lang))
+                await message.answer(plain, disable_web_page_preview=True, reply_markup=markup)
 
-    async def answer_with_llm(message: Message, question: str, lang: str, cache_key=None) -> None:
+    async def answer_with_llm(message: Message, question: str, lang: str, cache_key=None,
+                              search_query: str | None = None) -> None:
         if cache_key and cache_key in topic_cache:
             saved_at, cached = topic_cache[cache_key]
             if time.time() - saved_at < TOPIC_CACHE_SECONDS:
-                await send_answer(message, None, cached, lang)
+                await send_answer(message, None, question, cached, lang)
                 return
 
         mine, total = db.usage_today(message.from_user.id)
@@ -119,7 +132,12 @@ def setup_router(config: Config, db: Database, llm: LLM) -> Router:
         try:
             async with ChatActionSender.typing(bot=message.bot, chat_id=message.chat.id):
                 answer = await llm.ask(
-                    message.from_user.id, language_name(lang), question, remember=cache_key is None
+                    message.from_user.id,
+                    language_name(lang),
+                    question,
+                    remember=cache_key is None,
+                    strict_language=cache_key is not None,
+                    search_query=search_query,
                 )
         except LLMBusy:
             log.warning("LLM rate limited")
@@ -133,7 +151,7 @@ def setup_router(config: Config, db: Database, llm: LLM) -> Router:
         db.add_usage(message.from_user.id)
         if cache_key:
             topic_cache[cache_key] = (time.time(), answer)
-        await send_answer(message, placeholder, answer, lang)
+        await send_answer(message, placeholder, question, answer, lang)
 
     @router.message(CommandStart())
     async def start(message: Message) -> None:
@@ -219,7 +237,54 @@ def setup_router(config: Config, db: Database, llm: LLM) -> Router:
     async def topic_button(message: Message) -> None:
         lang = user_lang(message)
         topic = TOPIC_BUTTONS[message.text]
-        await answer_with_llm(message, TOPIC_QUESTIONS[topic], lang, cache_key=(topic, lang))
+        await answer_with_llm(message, TOPIC_QUESTIONS[topic], lang, cache_key=(topic, lang),
+                              search_query=TOPIC_SEARCH[topic])
+
+    @router.callback_query(F.data.startswith("rate:"))
+    async def rated(query: CallbackQuery) -> None:
+        _, answer_id, value = query.data.split(":")
+        db.rate(int(answer_id), query.from_user.id, 1 if value == "1" else -1)
+        await query.answer(t(user_lang(query), "thanks"))
+        try:
+            await query.message.edit_reply_markup(reply_markup=None)
+        except TelegramBadRequest:
+            pass
+
+    @router.message(Command("stats"))
+    async def stats(message: Message) -> None:
+        if message.from_user.id not in config.admin_ids:
+            return
+        s = db.stats()
+        langs = ", ".join(f"{lang} {n}" for lang, n in s["languages"]) or "-"
+        bad = "\n".join(f"• {_escape(q[:120])}" for (q,) in s["bad"]) or "-"
+        await message.answer(
+            f"<b>📊 Статистика</b>\n\n"
+            f"Пользователей: {s['users']} (сегодня новых {s['users_today']})\n"
+            f"Вопросов: {s['questions']} (сегодня {s['questions_today']})\n"
+            f"Оценки: 👍 {s['likes']} · 👎 {s['dislikes']}\n"
+            f"Языки: {langs}\n\n"
+            f"<b>Последние вопросы с 👎:</b>\n{bad}",
+            parse_mode="HTML",
+        )
+
+    @router.message(F.voice)
+    async def voice_question(message: Message) -> None:
+        lang = user_lang(message)
+        if not (config.voice and transcriber.available):
+            await message.answer(t(lang, "voice_off"))
+            return
+        try:
+            async with ChatActionSender.typing(bot=message.bot, chat_id=message.chat.id):
+                audio = await message.bot.download(message.voice)
+                text = await transcriber.transcribe(audio.read())
+        except Exception:
+            log.exception("Voice transcription failed")
+            text = ""
+        if not text:
+            await message.answer(t(lang, "voice_error"))
+            return
+        await message.answer(f"{t(lang, 'voice_heard')} <i>{_escape(text)}</i>", parse_mode="HTML")
+        await answer_with_llm(message, text, lang)
 
     @router.message(F.text)
     async def free_question(message: Message) -> None:

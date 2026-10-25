@@ -9,6 +9,7 @@ from .config import load_config
 from .db import Database
 from .handlers import setup_router
 from .llm import LLM
+from .voice import Transcriber
 
 
 async def main() -> None:
@@ -20,7 +21,7 @@ async def main() -> None:
     session = AiohttpSession(proxy=config.proxy_url) if config.proxy_url else AiohttpSession()
     bot = Bot(token=config.bot_token, session=session)
     dp = Dispatcher()
-    dp.include_router(setup_router(config, db, llm))
+    dp.include_router(setup_router(config, db, llm, Transcriber(config.whisper_model)))
 
     await bot.set_my_commands([
         BotCommand(command="start", description="Start / Начать"),

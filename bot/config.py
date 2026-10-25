@@ -20,6 +20,10 @@ class Config:
     model: str
     fallback_model: str | None
     web_search: bool
+    free_search: bool
+    voice: bool
+    whisper_model: str
+    admin_ids: frozenset[int]
     web_max_results: int
     user_daily_limit: int
     global_daily_limit: int
@@ -39,7 +43,11 @@ def load_config() -> Config:
         openrouter_api_key=key,
         model=os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat").strip(),
         fallback_model=os.getenv("OPENROUTER_FALLBACK_MODEL", "").strip() or None,
-        web_search=_bool("WEB_SEARCH", True),
+        web_search=_bool("WEB_SEARCH", False),
+        free_search=_bool("FREE_SEARCH", True),
+        voice=_bool("VOICE", True),
+        whisper_model=os.getenv("WHISPER_MODEL", "base").strip(),
+        admin_ids=frozenset(int(x) for x in os.getenv("ADMIN_ID", "").replace(" ", "").split(",") if x),
         web_max_results=int(os.getenv("WEB_MAX_RESULTS", "3")),
         user_daily_limit=int(os.getenv("USER_DAILY_LIMIT", "30")),
         global_daily_limit=int(os.getenv("GLOBAL_DAILY_LIMIT", "300")),

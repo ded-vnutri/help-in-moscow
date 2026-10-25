@@ -19,7 +19,7 @@ LANGUAGES = {
     "tr": ("🇹🇷 Türkçe", "Turkish"),
 }
 
-TOPICS = ["sim", "transport", "documents", "medicine", "money", "emergency"]
+TOPICS = ["sim", "transport", "documents", "medicine", "money", "study", "housing", "taxi", "emergency"]
 
 TOPIC_EMOJI = {
     "sim": "📱",
@@ -27,6 +27,9 @@ TOPIC_EMOJI = {
     "documents": "📄",
     "medicine": "💊",
     "money": "💳",
+    "study": "🎓",
+    "housing": "🏠",
+    "taxi": "🚕",
     "emergency": "🆘",
 }
 
@@ -42,8 +45,27 @@ TOPIC_QUESTIONS = {
                 "private and public clinics, medical insurance, what to do if you get sick?",
     "money": "How can a foreigner handle money in Moscow: foreign bank cards, cash, currency "
              "exchange, opening a Russian bank account, paying by phone?",
+    "study": "What should a foreign student in Moscow know: student card and dormitory, "
+             "student discounts on transport, Russian language courses, useful university services?",
+    "housing": "How can a foreigner rent a room or apartment in Moscow safely: where to search, "
+               "typical prices, contract, deposit, registration at the address, how to avoid scams?",
+    "taxi": "How to use taxis, car sharing and scooters in Moscow as a foreigner: which apps, "
+            "how to pay, approximate prices, safety tips?",
     "emergency": "What emergency phone numbers and steps should a foreigner in Moscow know "
                  "(police, ambulance, fire, single emergency number, lost passport, embassy)?",
+}
+
+# What the bot searches on the web for each topic (Russian sites are the most up to date).
+TOPIC_SEARCH = {
+    "sim": "как иностранцу купить SIM-карту в Москве документы 2026",
+    "transport": "стоимость проезда метро Москва Тройка тариф 2026",
+    "documents": "миграционный учет иностранного гражданина Москва сроки 2026",
+    "medicine": "медицинская помощь иностранцам в Москве ДМС полис аптеки",
+    "money": "иностранцу открыть счёт в банке Москва оплата иностранной картой 2026",
+    "study": "иностранному студенту в Москве общежитие студенческая карта льготы",
+    "housing": "аренда квартиры в Москве иностранцу договор цены 2026",
+    "taxi": "такси каршеринг самокаты Москва приложения цены 2026",
+    "emergency": "экстренные номера Москва 112 потерял паспорт иностранец",
 }
 
 PLACE_CATEGORIES = ["pharmacy", "metro", "mobile", "atm", "hospital"]
@@ -58,15 +80,7 @@ PLACE_EMOJI = {
 
 T = {
     "en": {
-        "welcome": "👋 Hi! I'm <b>Help in Moscow</b>, your assistant for life in Moscow.\n\n"
-                   "I can help with:\n"
-                   "• 📱 SIM cards and mobile internet\n"
-                   "• 🚇 Metro, buses and transport cards\n"
-                   "• 📄 Documents and registration\n"
-                   "• 💊 Pharmacies, doctors and insurance\n"
-                   "• 💳 Money, cards and banks\n"
-                   "• 📍 Finding places near you\n\n"
-                   "Pick a topic below or just ask me anything in your own words.",
+        "welcome": "👋 Hi! I'm <b>Help in Moscow</b>, your assistant for life in Moscow.\n\nI can help with:\n• 📱 SIM cards and mobile internet\n• 🚇 Metro, buses and transport cards\n• 📄 Documents and registration\n• 💊 Pharmacies, doctors and insurance\n• 💳 Money, cards and banks\n• 🎓 Study, 🏠 housing, 🚕 taxi\n• 📍 Finding places near you\n\nPick a topic below or ask me anything in your own words. You can also send a voice message 🎤",
         "choose_language": "Please choose your language:",
         "language_selected": "Language selected: English",
         "help": "Ask me anything about life in Moscow: transport, SIM cards, documents, "
@@ -88,20 +102,19 @@ T = {
         "limit_global": "The bot is very busy today. Please try again tomorrow.",
         "error": "Something went wrong. Please try again a bit later.",
         "open_map": "map",
+        "study": "Study",
+        "housing": "Housing",
+        "taxi": "Taxi & car sharing",
+        "thanks": "Thanks for the feedback!",
+        "voice_heard": "🎤 I heard:",
+        "voice_off": "🎤 Voice messages are not available yet. Please type your question.",
+        "voice_error": "🎤 I couldn't understand the voice message. Please try again or type the question.",
         "busy": "⏳ Too many questions right now. Please try again in a minute.",
         "open_on_map": "🗺 Open on the map",
         "nearby_map": "Here is a map search around you:",
     },
     "ru": {
-        "welcome": "👋 Привет! Я <b>Help in Moscow</b>, помогаю освоиться в Москве.\n\n"
-                   "Помогу с вопросами про:\n"
-                   "• 📱 SIM-карты и мобильный интернет\n"
-                   "• 🚇 метро, автобусы и транспортные карты\n"
-                   "• 📄 документы и регистрацию\n"
-                   "• 💊 аптеки, врачей и страховку\n"
-                   "• 💳 деньги, карты и банки\n"
-                   "• 📍 поиск мест рядом с тобой\n\n"
-                   "Выбери тему ниже или просто задай вопрос своими словами.",
+        "welcome": "👋 Привет! Я <b>Help in Moscow</b>, помогаю освоиться в Москве.\n\nПомогу с вопросами про:\n• 📱 SIM-карты и мобильный интернет\n• 🚇 метро, автобусы и транспортные карты\n• 📄 документы и регистрацию\n• 💊 аптеки, врачей и страховку\n• 💳 деньги, карты и банки\n• 🎓 учёбу, 🏠 жильё, 🚕 такси\n• 📍 поиск мест рядом с тобой\n\nВыбери тему ниже или задай вопрос своими словами. Можно и голосовым 🎤",
         "choose_language": "Выберите язык:",
         "language_selected": "Выбран язык: русский",
         "help": "Спрашивай что угодно о жизни в Москве: транспорт, SIM-карты, документы, "
@@ -123,13 +136,19 @@ T = {
         "limit_global": "Сегодня бот очень загружен. Попробуй завтра.",
         "error": "Что-то пошло не так. Попробуй чуть позже.",
         "open_map": "карта",
+        "study": "Учёба",
+        "housing": "Жильё",
+        "taxi": "Такси и каршеринг",
+        "thanks": "Спасибо за оценку!",
+        "voice_heard": "🎤 Я услышал:",
+        "voice_off": "🎤 Голосовые пока не работают. Напиши вопрос текстом, пожалуйста.",
+        "voice_error": "🎤 Не получилось разобрать голосовое. Попробуй ещё раз или напиши текстом.",
         "busy": "⏳ Сейчас слишком много вопросов. Попробуй через минуту.",
         "open_on_map": "🗺 Открыть на карте",
         "nearby_map": "Вот поиск на карте рядом с тобой:",
     },
     "zh": {
-        "welcome": "👋 你好！我是 Help in Moscow，帮助你在莫斯科生活的助手。\n\n"
-                   "请选择下面的主题，或直接用你自己的话提问。",
+        "welcome": "👋 你好！我是 <b>Help in Moscow</b>，帮助你在莫斯科生活的助手。\n\n我可以帮你解答：\n• 📱 SIM卡和手机上网\n• 🚇 地铁、公交和交通卡\n• 📄 证件和登记\n• 💊 药店、医生和保险\n• 💳 钱、银行卡和银行\n• 🎓 学习、🏠 住房、🚕 出租车\n• 📍 查找你附近的地方\n\n请选择下面的主题，或直接用你自己的话提问。也可以发语音 🎤",
         "choose_language": "请选择语言：",
         "language_selected": "已选择语言：中文",
         "help": "你可以问我任何关于莫斯科生活的问题：交通、SIM卡、证件、医疗、钱。"
@@ -151,13 +170,19 @@ T = {
         "limit_global": "今天机器人非常繁忙，请明天再试。",
         "error": "出了点问题，请稍后再试。",
         "open_map": "地图",
+        "study": "学习",
+        "housing": "住房",
+        "taxi": "出租车和共享汽车",
+        "thanks": "谢谢你的评价！",
+        "voice_heard": "🎤 我听到的是：",
+        "voice_off": "🎤 暂时不支持语音消息，请用文字提问。",
+        "voice_error": "🎤 没听清语音消息，请再试一次或用文字提问。",
         "busy": "⏳ 现在问题太多了，请一分钟后再试。",
         "open_on_map": "🗺 在地图上打开",
         "nearby_map": "这是你附近的地图搜索：",
     },
     "ar": {
-        "welcome": "👋 مرحبًا! أنا Help in Moscow، مساعدك للحياة في موسكو.\n\n"
-                   "اختر موضوعًا من الأسفل أو اسألني أي سؤال بكلماتك.",
+        "welcome": "👋 مرحبًا! أنا <b>Help in Moscow</b>، مساعدك للحياة في موسكو.\n\nيمكنني المساعدة في:\n• 📱 شرائح الاتصال والإنترنت\n• 🚇 المترو والحافلات وبطاقات المواصلات\n• 📄 الوثائق والتسجيل\n• 💊 الصيدليات والأطباء والتأمين\n• 💳 المال والبطاقات والبنوك\n• 🎓 الدراسة، 🏠 السكن، 🚕 التاكسي\n• 📍 إيجاد الأماكن القريبة منك\n\nاختر موضوعًا من الأسفل أو اسألني بكلماتك. يمكنك أيضًا إرسال رسالة صوتية 🎤",
         "choose_language": "يرجى اختيار اللغة:",
         "language_selected": "تم اختيار اللغة: العربية",
         "help": "اسألني عن أي شيء يخص الحياة في موسكو: المواصلات، شرائح الاتصال، الوثائق، "
@@ -179,13 +204,19 @@ T = {
         "limit_global": "البوت مشغول جدًا اليوم. حاول مرة أخرى غدًا.",
         "error": "حدث خطأ ما. حاول مرة أخرى بعد قليل.",
         "open_map": "الخريطة",
+        "study": "الدراسة",
+        "housing": "السكن",
+        "taxi": "التاكسي ومشاركة السيارات",
+        "thanks": "شكرًا على تقييمك!",
+        "voice_heard": "🎤 سمعت:",
+        "voice_off": "🎤 الرسائل الصوتية غير متاحة بعد. اكتب سؤالك من فضلك.",
+        "voice_error": "🎤 لم أفهم الرسالة الصوتية. حاول مرة أخرى أو اكتب سؤالك.",
         "busy": "⏳ هناك أسئلة كثيرة الآن. حاول مرة أخرى بعد دقيقة.",
         "open_on_map": "🗺 افتح على الخريطة",
         "nearby_map": "إليك البحث على الخريطة بالقرب منك:",
     },
     "fr": {
-        "welcome": "👋 Bonjour ! Je suis Help in Moscow, ton assistant pour la vie à Moscou.\n\n"
-                   "Choisis un thème ci-dessous ou pose-moi simplement ta question.",
+        "welcome": "👋 Bonjour ! Je suis <b>Help in Moscow</b>, ton assistant pour la vie à Moscou.\n\nJe peux t'aider avec :\n• 📱 cartes SIM et internet mobile\n• 🚇 métro, bus et cartes de transport\n• 📄 documents et enregistrement\n• 💊 pharmacies, médecins et assurance\n• 💳 argent, cartes et banques\n• 🎓 études, 🏠 logement, 🚕 taxi\n• 📍 trouver des lieux près de toi\n\nChoisis un thème ci-dessous ou pose ta question avec tes mots. Tu peux aussi envoyer un message vocal 🎤",
         "choose_language": "Veuillez choisir votre langue :",
         "language_selected": "Langue choisie : français",
         "help": "Pose-moi n'importe quelle question sur la vie à Moscou : transports, carte SIM, "
@@ -207,13 +238,19 @@ T = {
         "limit_global": "Le bot est très sollicité aujourd'hui. Réessaie demain.",
         "error": "Une erreur s'est produite. Réessaie un peu plus tard.",
         "open_map": "carte",
+        "study": "Études",
+        "housing": "Logement",
+        "taxi": "Taxi et autopartage",
+        "thanks": "Merci pour ton avis !",
+        "voice_heard": "🎤 J'ai entendu :",
+        "voice_off": "🎤 Les messages vocaux ne sont pas encore disponibles. Écris ta question, s'il te plaît.",
+        "voice_error": "🎤 Je n'ai pas compris le message vocal. Réessaie ou écris ta question.",
         "busy": "⏳ Trop de questions en ce moment. Réessaie dans une minute.",
         "open_on_map": "🗺 Ouvrir sur la carte",
         "nearby_map": "Voici une recherche sur la carte autour de toi :",
     },
     "es": {
-        "welcome": "👋 ¡Hola! Soy Help in Moscow, tu asistente para la vida en Moscú.\n\n"
-                   "Elige un tema abajo o simplemente hazme una pregunta con tus palabras.",
+        "welcome": "👋 ¡Hola! Soy <b>Help in Moscow</b>, tu asistente para la vida en Moscú.\n\nPuedo ayudarte con:\n• 📱 tarjetas SIM e internet móvil\n• 🚇 metro, autobuses y tarjetas de transporte\n• 📄 documentos y registro\n• 💊 farmacias, médicos y seguro\n• 💳 dinero, tarjetas y bancos\n• 🎓 estudios, 🏠 vivienda, 🚕 taxi\n• 📍 encontrar lugares cerca de ti\n\nElige un tema abajo o pregunta con tus palabras. También puedes enviar un mensaje de voz 🎤",
         "choose_language": "Por favor, elige tu idioma:",
         "language_selected": "Idioma seleccionado: español",
         "help": "Pregúntame lo que quieras sobre la vida en Moscú: transporte, tarjetas SIM, "
@@ -235,13 +272,19 @@ T = {
         "limit_global": "El bot está muy ocupado hoy. Inténtalo mañana.",
         "error": "Algo salió mal. Inténtalo un poco más tarde.",
         "open_map": "mapa",
+        "study": "Estudios",
+        "housing": "Vivienda",
+        "taxi": "Taxi y carsharing",
+        "thanks": "¡Gracias por tu valoración!",
+        "voice_heard": "🎤 He oído:",
+        "voice_off": "🎤 Los mensajes de voz aún no están disponibles. Escribe tu pregunta, por favor.",
+        "voice_error": "🎤 No entendí el mensaje de voz. Inténtalo de nuevo o escribe la pregunta.",
         "busy": "⏳ Hay demasiadas preguntas ahora. Inténtalo dentro de un minuto.",
         "open_on_map": "🗺 Abrir en el mapa",
         "nearby_map": "Aquí tienes una búsqueda en el mapa cerca de ti:",
     },
     "hi": {
-        "welcome": "👋 नमस्ते! मैं Help in Moscow हूँ, मॉस्को में जीवन के लिए आपका सहायक।\n\n"
-                   "नीचे कोई विषय चुनें या बस अपने शब्दों में सवाल पूछें।",
+        "welcome": "👋 नमस्ते! मैं <b>Help in Moscow</b> हूँ, मॉस्को में जीवन के लिए आपका सहायक।\n\nमैं इनमें मदद कर सकता हूँ:\n• 📱 सिम कार्ड और मोबाइल इंटरनेट\n• 🚇 मेट्रो, बस और ट्रांसपोर्ट कार्ड\n• 📄 दस्तावेज़ और रजिस्ट्रेशन\n• 💊 दवा की दुकानें, डॉक्टर और बीमा\n• 💳 पैसा, कार्ड और बैंक\n• 🎓 पढ़ाई, 🏠 रहने की जगह, 🚕 टैक्सी\n• 📍 आपके पास की जगहें ढूँढना\n\nनीचे कोई विषय चुनें या अपने शब्दों में पूछें। आप वॉइस मैसेज भी भेज सकते हैं 🎤",
         "choose_language": "कृपया अपनी भाषा चुनें:",
         "language_selected": "चुनी गई भाषा: हिन्दी",
         "help": "मॉस्को में जीवन के बारे में कुछ भी पूछें: परिवहन, सिम कार्ड, दस्तावेज़, "
@@ -263,13 +306,19 @@ T = {
         "limit_global": "आज बॉट बहुत व्यस्त है। कृपया कल फिर कोशिश करें।",
         "error": "कुछ गड़बड़ हो गई। कृपया थोड़ी देर बाद फिर कोशिश करें।",
         "open_map": "नक्शा",
+        "study": "पढ़ाई",
+        "housing": "रहने की जगह",
+        "taxi": "टैक्सी और कार शेयरिंग",
+        "thanks": "रेटिंग के लिए धन्यवाद!",
+        "voice_heard": "🎤 मैंने सुना:",
+        "voice_off": "🎤 वॉइस मैसेज अभी उपलब्ध नहीं हैं। कृपया सवाल लिखकर भेजें।",
+        "voice_error": "🎤 वॉइस मैसेज समझ नहीं आया। फिर से कोशिश करें या सवाल लिखें।",
         "busy": "⏳ अभी बहुत सारे सवाल हैं। कृपया एक मिनट बाद फिर कोशिश करें।",
         "open_on_map": "🗺 नक्शे पर खोलें",
         "nearby_map": "यह आपके आस-पास नक्शे पर खोज है:",
     },
     "fa": {
-        "welcome": "👋 سلام! من Help in Moscow هستم، دستیار شما برای زندگی در مسکو.\n\n"
-                   "یکی از موضوع‌های زیر را انتخاب کنید یا سؤال خود را با کلمات خودتان بپرسید.",
+        "welcome": "👋 سلام! من <b>Help in Moscow</b> هستم، دستیار شما برای زندگی در مسکو.\n\nمی‌توانم کمک کنم در:\n• 📱 سیم‌کارت و اینترنت همراه\n• 🚇 مترو، اتوبوس و کارت حمل‌ونقل\n• 📄 مدارک و ثبت اقامت\n• 💊 داروخانه، پزشک و بیمه\n• 💳 پول، کارت و بانک\n• 🎓 تحصیل، 🏠 مسکن، 🚕 تاکسی\n• 📍 پیدا کردن مکان‌های نزدیک شما\n\nیکی از موضوع‌های زیر را انتخاب کنید یا سؤال خود را بپرسید. می‌توانید پیام صوتی هم بفرستید 🎤",
         "choose_language": "لطفاً زبان خود را انتخاب کنید:",
         "language_selected": "زبان انتخاب‌شده: فارسی",
         "help": "هر سؤالی درباره زندگی در مسکو دارید بپرسید: حمل‌ونقل، سیم‌کارت، مدارک، "
@@ -291,13 +340,19 @@ T = {
         "limit_global": "ربات امروز خیلی شلوغ است. لطفاً فردا دوباره امتحان کنید.",
         "error": "مشکلی پیش آمد. لطفاً کمی بعد دوباره امتحان کنید.",
         "open_map": "نقشه",
+        "study": "تحصیل",
+        "housing": "مسکن",
+        "taxi": "تاکسی و اشتراک خودرو",
+        "thanks": "ممنون از امتیاز شما!",
+        "voice_heard": "🎤 شنیدم:",
+        "voice_off": "🎤 پیام صوتی هنوز فعال نیست. لطفاً سؤال را بنویسید.",
+        "voice_error": "🎤 پیام صوتی را متوجه نشدم. دوباره امتحان کنید یا سؤال را بنویسید.",
         "busy": "⏳ الان سؤال‌های زیادی هست. لطفاً یک دقیقه بعد دوباره امتحان کنید.",
         "open_on_map": "🗺 باز کردن روی نقشه",
         "nearby_map": "این جستجو روی نقشه در نزدیکی شماست:",
     },
     "tr": {
-        "welcome": "👋 Merhaba! Ben Help in Moscow, Moskova'daki hayatın için asistanınım.\n\n"
-                   "Aşağıdan bir konu seç ya da sorunu kendi kelimelerinle sor.",
+        "welcome": "👋 Merhaba! Ben <b>Help in Moscow</b>, Moskova'daki hayatın için asistanınım.\n\nŞunlarda yardımcı olabilirim:\n• 📱 SIM kart ve mobil internet\n• 🚇 metro, otobüs ve ulaşım kartları\n• 📄 belgeler ve kayıt\n• 💊 eczaneler, doktorlar ve sigorta\n• 💳 para, kartlar ve bankalar\n• 🎓 eğitim, 🏠 konut, 🚕 taksi\n• 📍 yakınındaki yerleri bulma\n\nAşağıdan bir konu seç ya da kendi kelimelerinle sor. Sesli mesaj da gönderebilirsin 🎤",
         "choose_language": "Lütfen dilinizi seçin:",
         "language_selected": "Seçilen dil: Türkçe",
         "help": "Moskova'daki hayatla ilgili her şeyi sorabilirsin: ulaşım, SIM kart, belgeler, "
@@ -319,6 +374,13 @@ T = {
         "limit_global": "Bot bugün çok yoğun. Lütfen yarın tekrar dene.",
         "error": "Bir şeyler ters gitti. Lütfen biraz sonra tekrar dene.",
         "open_map": "harita",
+        "study": "Eğitim",
+        "housing": "Konut",
+        "taxi": "Taksi ve araç paylaşımı",
+        "thanks": "Değerlendirmen için teşekkürler!",
+        "voice_heard": "🎤 Duyduğum:",
+        "voice_off": "🎤 Sesli mesajlar henüz kullanılamıyor. Lütfen sorunu yaz.",
+        "voice_error": "🎤 Sesli mesajı anlayamadım. Tekrar dene ya da sorunu yaz.",
         "busy": "⏳ Şu anda çok fazla soru var. Lütfen bir dakika sonra tekrar dene.",
         "open_on_map": "🗺 Haritada aç",
         "nearby_map": "Yakınındaki harita araması:",
