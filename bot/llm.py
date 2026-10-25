@@ -59,7 +59,9 @@ NO_WEB_RULE = (
 
 FREE_WEB_RULE = (
     "- Below are fresh web search results. Prefer them over your memory for prices, fares, rules "
-    "and names, because your memory may be outdated. Add 1-2 links copied exactly from these results.\n"
+    "and names, because your memory may be outdated. Copy numbers exactly from the results; if they "
+    "disagree, trust official sites (mos.ru, mosmetro.ru, gosuslugi.ru). Do not add numbers that are not in "
+    "the results. Add 1-2 links copied exactly from these results.\n"
 )
 LANGUAGE_RULE = "- Reply in {language}. Only if the user clearly writes in a different language, reply in that language.\n"
 STRICT_LANGUAGE_RULE = "- Always reply in {language}, even though the question below is written in English.\n"
@@ -140,7 +142,7 @@ class LLM:
         return answer
 
     async def _complete(self, model: str, messages: list[dict]) -> str:
-        payload = {"model": model, "messages": messages, "max_tokens": 600}
+        payload = {"model": model, "messages": messages, "max_tokens": 1000}
         if self.config.web_search:
             payload["plugins"] = [{"id": "web", "max_results": self.config.web_max_results}]
 
@@ -161,7 +163,11 @@ class LLM:
             log.error("OpenRouter error %s from %s: %s", resp.status, model, data)
             raise LLMError(str(data.get("error", data)))
 
-        answer = clean_answer(data["choices"][0]["message"].get("content") or "")
+        choice = data["choices"][0]
+        answer = clean_answer(choice["message"].get("content") or "")
+        if choice.get("finish_reason") == "length" and "\n" in answer:
+            # Cut off by the token limit: drop the unfinished last line.
+            answer = answer.rsplit("\n", 1)[0].rstrip()
         if not answer:
             raise LLMError("empty answer")
         return answer
