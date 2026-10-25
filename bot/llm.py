@@ -119,7 +119,9 @@ class LLM:
             messages.append({"role": "system", "content": f"Web search results ({date.today().isoformat()}):\n\n{context}"})
         if remember:
             messages += list(self.history[user_id])
-        messages.append({"role": "user", "content": question})
+        # Free models follow the language of the last message, so the reminder goes right after the question.
+        reminder = f"Answer only in {language}. Keep the format: emoji heading, 3-5 bullets, at most 100 words."
+        messages.append({"role": "user", "content": f"{question}\n\n({reminder})"})
 
         models = [self.config.model] + ([self.config.fallback_model] if self.config.fallback_model else [])
         answer = ""
@@ -138,7 +140,7 @@ class LLM:
         return answer
 
     async def _complete(self, model: str, messages: list[dict]) -> str:
-        payload = {"model": model, "messages": messages, "max_tokens": 900}
+        payload = {"model": model, "messages": messages, "max_tokens": 600}
         if self.config.web_search:
             payload["plugins"] = [{"id": "web", "max_results": self.config.web_max_results}]
 

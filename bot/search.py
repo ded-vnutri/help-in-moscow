@@ -20,6 +20,7 @@ PAGES_TO_READ = 2
 PAGE_CHARS = 2500
 SNIPPET_CHARS = 300
 TIMEOUT_S = 12
+PAGE_TIMEOUT_S = 6
 
 _DROP = re.compile(r"<(script|style|noscript|svg|header|footer|nav|form)\b.*?</\1>", re.DOTALL | re.IGNORECASE)
 _TAG = re.compile(r"<[^>]+>")
@@ -60,7 +61,7 @@ async def web_context(query: str, proxy: str | None = None) -> str:
         return ""
 
     headers = {"User-Agent": "Mozilla/5.0 (compatible; HelpInMoscowBot/1.0)"}
-    async with make_session(proxy, timeout=aiohttp.ClientTimeout(total=TIMEOUT_S), headers=headers) as session:
+    async with make_session(proxy, timeout=aiohttp.ClientTimeout(total=PAGE_TIMEOUT_S), headers=headers) as session:
         pages = await asyncio.gather(*(_read_page(session, r["href"]) for r in results[:PAGES_TO_READ]))
 
     blocks = []
