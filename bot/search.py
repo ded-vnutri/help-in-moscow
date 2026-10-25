@@ -7,6 +7,7 @@ from fresh pages instead of its outdated memory.
 import asyncio
 import logging
 import re
+import time
 from html import unescape
 
 import aiohttp
@@ -21,6 +22,11 @@ PAGE_CHARS = 2500
 SNIPPET_CHARS = 300
 TIMEOUT_S = 12
 PAGE_TIMEOUT_S = 6
+ATTEMPTS = 3  # search engines often rate-limit one IP: retry after a pause
+RETRY_PAUSE_S = 1.5
+CACHE_SECONDS = 6 * 60 * 60
+
+_cache: dict[str, tuple[float, str]] = {}
 
 _DROP = re.compile(r"<(script|style|noscript|svg|header|footer|nav|form)\b.*?</\1>", re.DOTALL | re.IGNORECASE)
 _TAG = re.compile(r"<[^>]+>")
@@ -52,11 +58,19 @@ async def _read_page(session: aiohttp.ClientSession, url: str) -> str:
 
 async def web_context(query: str, proxy: str | None = None) -> str:
     """Return search results as text for the prompt, or "" if search failed."""
-    try:
-        results = await asyncio.wait_for(asyncio.to_thread(_ddg, query), TIMEOUT_S)
-    except Exception as e:
-        log.warning("Web search failed for %r: %s", query, e)
-        return ""
+    cached = _cache.get(query)
+    if cached and time.time() - cached[0] < CACHE_SECONDS:
+        return cached[1]
+
+    results = []
+    for attempt in range(ATTEMPTS):
+        try:
+            results = await asyncio.wait_for(asyncio.to_thread(_ddg, query), TIMEOUT_S)
+        except Exception as e:
+            log.warning("Web search attempt %d failed for %r: %s", attempt + 1, query, e)
+        if results:
+            break
+        await asyncio.sleep(RETRY_PAUSE_S)
     if not results:
         return ""
 
@@ -68,4 +82,6 @@ async def web_context(query: str, proxy: str | None = None) -> str:
     for i, r in enumerate(results):
         text = pages[i] if i < len(pages) and pages[i] else (r.get("body") or "")[:SNIPPET_CHARS]
         blocks.append(f"[{i + 1}] {r.get('title', '')}\nURL: {r['href']}\n{text}")
-    return "\n\n".join(blocks)
+    context = "\n\n".join(blocks)
+    _cache[query] = (time.time(), context)
+    return context

@@ -103,8 +103,10 @@ class LLM:
         context = ""
         if not self.config.web_search and self.config.free_search:
             context = await search.web_context(search_query or f"{question} Москва", self.config.proxy_url)
+        # Paid OpenRouter search: always, or only when the free search found nothing.
+        use_web = self.config.web_search or (self.config.free_search and not context and self.config.web_fallback)
 
-        if self.config.web_search:
+        if use_web:
             sources_rule = WEB_RULE
         elif context:
             sources_rule = FREE_WEB_RULE
@@ -129,7 +131,7 @@ class LLM:
         answer = ""
         for i, model in enumerate(models):
             try:
-                answer = await self._complete(model, messages)
+                answer = await self._complete(model, messages, use_web)
                 break
             except LLMError:
                 if i == len(models) - 1:
@@ -141,12 +143,12 @@ class LLM:
             self.history[user_id].append({"role": "assistant", "content": answer})
         return answer
 
-    async def _complete(self, model: str, messages: list[dict]) -> str:
+    async def _complete(self, model: str, messages: list[dict], use_web: bool) -> str:
         payload = {"model": model, "messages": messages, "max_tokens": 1000}
         if not self.config.reasoning:
             # Hidden reasoning eats the token limit and gives empty or cut-off answers.
             payload["reasoning"] = {"enabled": False}
-        if self.config.web_search:
+        if use_web:
             payload["plugins"] = [{"id": "web", "max_results": self.config.web_max_results}]
 
         headers = {

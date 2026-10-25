@@ -22,6 +22,7 @@ class Config:
     reasoning: bool
     web_search: bool
     free_search: bool
+    web_fallback: bool
     voice: bool
     whisper_model: str
     admin_ids: frozenset[int]
@@ -47,10 +48,11 @@ def load_config() -> Config:
         reasoning=_bool("REASONING", False),
         web_search=_bool("WEB_SEARCH", False),
         free_search=_bool("FREE_SEARCH", True),
+        web_fallback=_bool("WEB_SEARCH_FALLBACK", True),
         voice=_bool("VOICE", True),
         whisper_model=os.getenv("WHISPER_MODEL", "base").strip(),
         admin_ids=frozenset(int(x) for x in os.getenv("ADMIN_ID", "").replace(" ", "").split(",") if x),
-        web_max_results=int(os.getenv("WEB_MAX_RESULTS", "3")),
+        web_max_results=int(os.getenv("WEB_MAX_RESULTS", "2")),
         user_daily_limit=int(os.getenv("USER_DAILY_LIMIT", "30")),
         global_daily_limit=int(os.getenv("GLOBAL_DAILY_LIMIT", "300")),
         proxy_url=os.getenv("PROXY_URL", "").strip() or None,
