@@ -58,7 +58,14 @@ PLACE_EMOJI = {
 
 T = {
     "en": {
-        "welcome": "👋 Hi! I'm Help in Moscow, your assistant for life in Moscow.\n\n"
+        "welcome": "👋 Hi! I'm <b>Help in Moscow</b>, your assistant for life in Moscow.\n\n"
+                   "I can help with:\n"
+                   "• 📱 SIM cards and mobile internet\n"
+                   "• 🚇 Metro, buses and transport cards\n"
+                   "• 📄 Documents and registration\n"
+                   "• 💊 Pharmacies, doctors and insurance\n"
+                   "• 💳 Money, cards and banks\n"
+                   "• 📍 Finding places near you\n\n"
                    "Pick a topic below or just ask me anything in your own words.",
         "choose_language": "Please choose your language:",
         "language_selected": "Language selected: English",
@@ -81,11 +88,19 @@ T = {
         "limit_global": "The bot is very busy today. Please try again tomorrow.",
         "error": "Something went wrong. Please try again a bit later.",
         "open_map": "map",
+        "busy": "⏳ Too many questions right now. Please try again in a minute.",
         "open_on_map": "🗺 Open on the map",
         "nearby_map": "Here is a map search around you:",
     },
     "ru": {
-        "welcome": "👋 Привет! Я Help in Moscow, помогаю освоиться в Москве.\n\n"
+        "welcome": "👋 Привет! Я <b>Help in Moscow</b>, помогаю освоиться в Москве.\n\n"
+                   "Помогу с вопросами про:\n"
+                   "• 📱 SIM-карты и мобильный интернет\n"
+                   "• 🚇 метро, автобусы и транспортные карты\n"
+                   "• 📄 документы и регистрацию\n"
+                   "• 💊 аптеки, врачей и страховку\n"
+                   "• 💳 деньги, карты и банки\n"
+                   "• 📍 поиск мест рядом с тобой\n\n"
                    "Выбери тему ниже или просто задай вопрос своими словами.",
         "choose_language": "Выберите язык:",
         "language_selected": "Выбран язык: русский",
@@ -108,6 +123,7 @@ T = {
         "limit_global": "Сегодня бот очень загружен. Попробуй завтра.",
         "error": "Что-то пошло не так. Попробуй чуть позже.",
         "open_map": "карта",
+        "busy": "⏳ Сейчас слишком много вопросов. Попробуй через минуту.",
         "open_on_map": "🗺 Открыть на карте",
         "nearby_map": "Вот поиск на карте рядом с тобой:",
     },
@@ -135,6 +151,7 @@ T = {
         "limit_global": "今天机器人非常繁忙，请明天再试。",
         "error": "出了点问题，请稍后再试。",
         "open_map": "地图",
+        "busy": "⏳ 现在问题太多了，请一分钟后再试。",
         "open_on_map": "🗺 在地图上打开",
         "nearby_map": "这是你附近的地图搜索：",
     },
@@ -162,6 +179,7 @@ T = {
         "limit_global": "البوت مشغول جدًا اليوم. حاول مرة أخرى غدًا.",
         "error": "حدث خطأ ما. حاول مرة أخرى بعد قليل.",
         "open_map": "الخريطة",
+        "busy": "⏳ هناك أسئلة كثيرة الآن. حاول مرة أخرى بعد دقيقة.",
         "open_on_map": "🗺 افتح على الخريطة",
         "nearby_map": "إليك البحث على الخريطة بالقرب منك:",
     },
@@ -189,6 +207,7 @@ T = {
         "limit_global": "Le bot est très sollicité aujourd'hui. Réessaie demain.",
         "error": "Une erreur s'est produite. Réessaie un peu plus tard.",
         "open_map": "carte",
+        "busy": "⏳ Trop de questions en ce moment. Réessaie dans une minute.",
         "open_on_map": "🗺 Ouvrir sur la carte",
         "nearby_map": "Voici une recherche sur la carte autour de toi :",
     },
@@ -216,6 +235,7 @@ T = {
         "limit_global": "El bot está muy ocupado hoy. Inténtalo mañana.",
         "error": "Algo salió mal. Inténtalo un poco más tarde.",
         "open_map": "mapa",
+        "busy": "⏳ Hay demasiadas preguntas ahora. Inténtalo dentro de un minuto.",
         "open_on_map": "🗺 Abrir en el mapa",
         "nearby_map": "Aquí tienes una búsqueda en el mapa cerca de ti:",
     },
@@ -243,6 +263,7 @@ T = {
         "limit_global": "आज बॉट बहुत व्यस्त है। कृपया कल फिर कोशिश करें।",
         "error": "कुछ गड़बड़ हो गई। कृपया थोड़ी देर बाद फिर कोशिश करें।",
         "open_map": "नक्शा",
+        "busy": "⏳ अभी बहुत सारे सवाल हैं। कृपया एक मिनट बाद फिर कोशिश करें।",
         "open_on_map": "🗺 नक्शे पर खोलें",
         "nearby_map": "यह आपके आस-पास नक्शे पर खोज है:",
     },
@@ -270,6 +291,7 @@ T = {
         "limit_global": "ربات امروز خیلی شلوغ است. لطفاً فردا دوباره امتحان کنید.",
         "error": "مشکلی پیش آمد. لطفاً کمی بعد دوباره امتحان کنید.",
         "open_map": "نقشه",
+        "busy": "⏳ الان سؤال‌های زیادی هست. لطفاً یک دقیقه بعد دوباره امتحان کنید.",
         "open_on_map": "🗺 باز کردن روی نقشه",
         "nearby_map": "این جستجو روی نقشه در نزدیکی شماست:",
     },
@@ -297,6 +319,7 @@ T = {
         "limit_global": "Bot bugün çok yoğun. Lütfen yarın tekrar dene.",
         "error": "Bir şeyler ters gitti. Lütfen biraz sonra tekrar dene.",
         "open_map": "harita",
+        "busy": "⏳ Şu anda çok fazla soru var. Lütfen bir dakika sonra tekrar dene.",
         "open_on_map": "🗺 Haritada aç",
         "nearby_map": "Yakınındaki harita araması:",
     },

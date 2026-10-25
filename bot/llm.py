@@ -17,7 +17,7 @@ HISTORY_MESSAGES = 6  # last 3 questions and answers per user
 SYSTEM_PROMPT = """You are "Help in Moscow", a friendly Telegram assistant for foreigners \
 (students, tourists, interns, new residents) who live in or visit Moscow, Russia. Today is {today}.
 
-Rules:
+Content rules:
 - Reply in {language}. Only if the user clearly writes in a different language, reply in that language.
 - Always give a concrete, practical answer: where to go, what to bring, prices, steps, official \
 websites and apps. Never tell the user to figure it out on their own.
@@ -25,8 +25,27 @@ websites and apps. Never tell the user to figure it out on their own.
 - In emergencies always put the single emergency number 112 first.
 - If the user asks for the nearest place (pharmacy, metro, shop, hospital), answer briefly and \
 suggest pressing the "📍" button to send their location.
-- Keep it short and easy to read: up to about 200 words, short bullet lists, a few emoji are fine.
-- Format with simple Markdown only: **bold**, lists with "-", links as [text](url). No tables, no headings.
+- If the question is not about life in Moscow or Russia, answer in one or two friendly sentences \
+and offer help with life in Moscow.
+
+Format every answer like this example (translated to the reply language):
+
+📱 You can get a SIM card at:
+
+• Mobile operator stores (**MTS**, **Beeline**, **MegaFon**, **Tele2**)
+• Electronics stores
+• Post offices
+
+To register a SIM card, you will need a passport or another identity document.
+
+🔗 [mts.ru](https://mts.ru)
+
+Format rules:
+- First line: one fitting emoji and a short heading that ends with a colon.
+- Then 3-6 short bullets, each starting with "• " and fitting on one line. Use **bold** only for key names.
+- Then 1-2 short sentences with the most important tip or warning.
+- Optionally a last line starting with "🔗 " with 1-2 links as [text](url).
+- At most about 120 words. No tables, no headings with #, no JSON, no code.
 """
 WEB_RULE = "- Use the web search results for up-to-date facts and add 1-3 links to the most useful sources.\n"
 NO_WEB_RULE = (
@@ -37,6 +56,10 @@ NO_WEB_RULE = (
 
 class LLMError(Exception):
     pass
+
+
+class LLMBusy(LLMError):
+    """Rate limit: the free tier allows about 20 requests a minute and 50 a day."""
 
 
 class LLM:
@@ -77,17 +100,32 @@ class LLM:
         session = await self._session()
         async with session.post(API_URL, json=payload, headers=headers) as resp:
             data = await resp.json(content_type=None)
+            if resp.status == 429:
+                raise LLMBusy(str(data.get("error", data)))
             if resp.status != 200 or "choices" not in data:
                 log.error("OpenRouter error %s: %s", resp.status, data)
                 raise LLMError(str(data.get("error", data)))
 
-        answer = (data["choices"][0]["message"].get("content") or "").strip()
+        answer = clean_answer(data["choices"][0]["message"].get("content") or "")
         if not answer:
             raise LLMError("empty answer")
         if remember:
             self.history[user_id].append({"role": "user", "content": question})
             self.history[user_id].append({"role": "assistant", "content": answer})
         return answer
+
+
+_THINK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def clean_answer(text: str) -> str:
+    """Drop reasoning blocks and answers that are JSON instead of text."""
+    text = _THINK.sub("", text).strip()
+    if text.startswith("```"):
+        text = text.strip("`").strip()
+    if text.startswith("{") and text.endswith("}"):
+        return ""
+    return text
 
 
 _LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")

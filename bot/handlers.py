@@ -29,7 +29,7 @@ from .i18n import (
     t,
     topic_label,
 )
-from .llm import LLM, markdown_to_telegram_html
+from .llm import LLM, LLMBusy, markdown_to_telegram_html
 
 log = logging.getLogger(__name__)
 
@@ -121,6 +121,10 @@ def setup_router(config: Config, db: Database, llm: LLM) -> Router:
                 answer = await llm.ask(
                     message.from_user.id, language_name(lang), question, remember=cache_key is None
                 )
+        except LLMBusy:
+            log.warning("LLM rate limited")
+            await placeholder.edit_text(t(lang, "busy"))
+            return
         except Exception:
             log.exception("LLM request failed")
             await placeholder.edit_text(t(lang, "error"))
@@ -137,7 +141,7 @@ def setup_router(config: Config, db: Database, llm: LLM) -> Router:
             await message.answer(t(user_lang(message), "choose_language"), reply_markup=language_keyboard())
             return
         lang = user_lang(message)
-        await message.answer(t(lang, "welcome"), reply_markup=main_keyboard(lang))
+        await message.answer(t(lang, "welcome"), parse_mode="HTML", reply_markup=main_keyboard(lang))
 
     @router.message(Command("chooselanguage", "language"))
     async def choose_language(message: Message) -> None:
@@ -157,7 +161,7 @@ def setup_router(config: Config, db: Database, llm: LLM) -> Router:
         db.set_lang(query.from_user.id, lang)
         await query.answer()
         await query.message.edit_text(t(lang, "language_selected"))
-        await query.message.answer(t(lang, "welcome"), reply_markup=main_keyboard(lang))
+        await query.message.answer(t(lang, "welcome"), parse_mode="HTML", reply_markup=main_keyboard(lang))
 
     @router.message(F.text.in_(LANGUAGE_BUTTONS))
     async def language_button(message: Message) -> None:
