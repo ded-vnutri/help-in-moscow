@@ -18,6 +18,7 @@ class Config:
     bot_token: str
     openrouter_api_key: str
     model: str
+    fallback_model: str | None
     web_search: bool
     web_max_results: int
     user_daily_limit: int
@@ -37,6 +38,7 @@ def load_config() -> Config:
         bot_token=token,
         openrouter_api_key=key,
         model=os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat").strip(),
+        fallback_model=os.getenv("OPENROUTER_FALLBACK_MODEL", "").strip() or None,
         web_search=_bool("WEB_SEARCH", True),
         web_max_results=int(os.getenv("WEB_MAX_RESULTS", "3")),
         user_daily_limit=int(os.getenv("USER_DAILY_LIMIT", "30")),

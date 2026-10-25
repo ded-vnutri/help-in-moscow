@@ -42,15 +42,16 @@ To register a SIM card, you will need a passport or another identity document.
 
 Format rules:
 - First line: one fitting emoji and a short heading that ends with a colon.
-- Then 3-6 short bullets, each starting with "• " and fitting on one line. Use **bold** only for key names.
+- Then 3-5 short bullets, each starting with "• ", at most about 12 words each. Use **bold** only for key names.
 - Then 1-2 short sentences with the most important tip or warning.
 - Optionally a last line starting with "🔗 " with 1-2 links as [text](url).
-- At most about 120 words. No tables, no headings with #, no JSON, no code.
+- At most about 100 words. No tables, no headings with #, no JSON, no code.
 """
 WEB_RULE = "- Use the web search results for up-to-date facts and add 1-3 links to the most useful sources.\n"
 NO_WEB_RULE = (
-    "- Answer from your own knowledge. Where useful, add 1-2 links to official sites "
-    "(mos.ru, gosuslugi.ru, mosmetro.ru) that you are sure exist.\n"
+    "- Answer from your own knowledge. Do not invent names, prices or rules you are not sure about.\n"
+    "- Links: only main pages of well-known sites (https://www.mos.ru, https://www.gosuslugi.ru, "
+    "https://mosmetro.ru, operator or shop main pages), never deep links.\n"
 )
 
 
@@ -88,7 +89,24 @@ class LLM:
             messages += list(self.history[user_id])
         messages.append({"role": "user", "content": question})
 
-        payload = {"model": self.config.model, "messages": messages, "max_tokens": 900}
+        models = [self.config.model] + ([self.config.fallback_model] if self.config.fallback_model else [])
+        answer = ""
+        for i, model in enumerate(models):
+            try:
+                answer = await self._complete(model, messages)
+                break
+            except LLMError:
+                if i == len(models) - 1:
+                    raise
+                log.warning("Model %s failed, trying %s", model, models[i + 1], exc_info=True)
+
+        if remember:
+            self.history[user_id].append({"role": "user", "content": question})
+            self.history[user_id].append({"role": "assistant", "content": answer})
+        return answer
+
+    async def _complete(self, model: str, messages: list[dict]) -> str:
+        payload = {"model": model, "messages": messages, "max_tokens": 900}
         if self.config.web_search:
             payload["plugins"] = [{"id": "web", "max_results": self.config.web_max_results}]
 
@@ -98,20 +116,20 @@ class LLM:
             "X-Title": "Help in Moscow",
         }
         session = await self._session()
-        async with session.post(API_URL, json=payload, headers=headers) as resp:
-            data = await resp.json(content_type=None)
-            if resp.status == 429:
-                raise LLMBusy(str(data.get("error", data)))
-            if resp.status != 200 or "choices" not in data:
-                log.error("OpenRouter error %s: %s", resp.status, data)
-                raise LLMError(str(data.get("error", data)))
+        try:
+            async with session.post(API_URL, json=payload, headers=headers) as resp:
+                data = await resp.json(content_type=None)
+        except (aiohttp.ClientError, TimeoutError, ValueError) as e:
+            raise LLMError(f"request to {model} failed: {e!r}") from e
+        if resp.status == 429:
+            raise LLMBusy(str(data.get("error", data)))
+        if resp.status != 200 or "choices" not in data:
+            log.error("OpenRouter error %s from %s: %s", resp.status, model, data)
+            raise LLMError(str(data.get("error", data)))
 
         answer = clean_answer(data["choices"][0]["message"].get("content") or "")
         if not answer:
             raise LLMError("empty answer")
-        if remember:
-            self.history[user_id].append({"role": "user", "content": question})
-            self.history[user_id].append({"role": "assistant", "content": answer})
         return answer
 
 
@@ -130,6 +148,7 @@ def clean_answer(text: str) -> str:
 
 _LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 _BOLD = re.compile(r"\*\*(.+?)\*\*")
+_ITALIC = re.compile(r"(?<![*\w])\*(?!\s)([^*\n]+?)\*(?![*\w])")
 _HEADING = re.compile(r"^#{1,6}\s*(.+)$", re.MULTILINE)
 _BULLET = re.compile(r"^(\s*)[-*]\s+", re.MULTILINE)
 
@@ -146,5 +165,6 @@ def markdown_to_telegram_html(text: str) -> str:
     text = html.escape(text, quote=False)
     text = _HEADING.sub(r"**\1**", text)
     text = _BOLD.sub(r"<b>\1</b>", text)
+    text = _ITALIC.sub(r"<i>\1</i>", text)
     text = _BULLET.sub(r"\1• ", text)
     return re.sub(r"\x00(\d+)\x00", lambda m: links[int(m.group(1))], text)
