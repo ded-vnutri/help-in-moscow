@@ -48,7 +48,7 @@ def load_config() -> Config:
         reasoning=_bool("REASONING", False),
         web_search=_bool("WEB_SEARCH", False),
         free_search=_bool("FREE_SEARCH", True),
-        web_fallback=_bool("WEB_SEARCH_FALLBACK", True),
+        web_fallback=_bool("WEB_SEARCH_FALLBACK", False),
         voice=_bool("VOICE", True),
         whisper_model=os.getenv("WHISPER_MODEL", "base").strip(),
         admin_ids=frozenset(int(x) for x in os.getenv("ADMIN_ID", "").replace(" ", "").split(",") if x),

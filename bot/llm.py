@@ -23,6 +23,10 @@ Content rules:
 websites and apps. Never tell the user to figure it out on their own.
 {sources_rule}- If something changes often (prices, rules), give the current best answer and say briefly what to double-check.
 - In emergencies always put the single emergency number 112 first.
+- Key Moscow facts, checked in October 2026. Use them unless an official site in the search results shows \
+a newer number: metro, MCC, MCD (Central zone) and buses with a Troika card ("Koshelek" fare) 75 RUB per ride; \
+"90 minutes" fare (one metro ride plus unlimited buses) 112 RUB; contactless bank card 83 RUB; Face Pay \
+biometric 71 RUB; Troika card deposit 150 RUB; emergency number 112.
 - If the user asks for the nearest place (pharmacy, metro, shop, hospital), answer briefly and \
 suggest pressing the "📍" button to send their location.
 - If the question is not about life in Moscow or Russia, answer in one or two friendly sentences \
@@ -61,7 +65,7 @@ FREE_WEB_RULE = (
     "- Below are fresh web search results. Prefer them over your memory for prices, fares, rules "
     "and names, because your memory may be outdated. Copy numbers exactly from the results; if they "
     "disagree, trust official sites (mos.ru, mosmetro.ru, gosuslugi.ru). Do not add numbers that are not in "
-    "the results. Add 1-2 links copied exactly from these results.\n"
+    "the results or the key facts.Add 1-2 links copied exactly from these results.\n"
 )
 LANGUAGE_RULE = "- Reply in {language}. Only if the user clearly writes in a different language, reply in that language.\n"
 STRICT_LANGUAGE_RULE = "- Always reply in {language}, even though the question below is written in English.\n"
