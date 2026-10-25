@@ -1,0 +1,73 @@
+import os
+import sqlite3
+from datetime import date
+
+
+class Database:
+    def __init__(self, path: str):
+        folder = os.path.dirname(path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+        self.conn = sqlite3.connect(path)
+        self.conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                lang TEXT,
+                lat REAL,
+                lon REAL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS usage (
+                day TEXT,
+                user_id INTEGER,
+                count INTEGER DEFAULT 0,
+                PRIMARY KEY (day, user_id)
+            );
+            """
+        )
+        self.conn.commit()
+
+    def get_lang(self, user_id: int) -> str | None:
+        row = self.conn.execute("SELECT lang FROM users WHERE user_id = ?", (user_id,)).fetchone()
+        return row[0] if row else None
+
+    def set_lang(self, user_id: int, lang: str) -> None:
+        self.conn.execute(
+            "INSERT INTO users (user_id, lang) VALUES (?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET lang = excluded.lang",
+            (user_id, lang),
+        )
+        self.conn.commit()
+
+    def set_location(self, user_id: int, lat: float, lon: float) -> None:
+        self.conn.execute(
+            "INSERT INTO users (user_id, lat, lon) VALUES (?, ?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET lat = excluded.lat, lon = excluded.lon",
+            (user_id, lat, lon),
+        )
+        self.conn.commit()
+
+    def get_location(self, user_id: int) -> tuple[float, float] | None:
+        row = self.conn.execute("SELECT lat, lon FROM users WHERE user_id = ?", (user_id,)).fetchone()
+        if not row or row[0] is None:
+            return None
+        return row[0], row[1]
+
+    def usage_today(self, user_id: int) -> tuple[int, int]:
+        """Return (this user's requests today, all requests today)."""
+        day = date.today().isoformat()
+        mine = self.conn.execute(
+            "SELECT count FROM usage WHERE day = ? AND user_id = ?", (day, user_id)
+        ).fetchone()
+        total = self.conn.execute("SELECT COALESCE(SUM(count), 0) FROM usage WHERE day = ?", (day,)).fetchone()
+        return (mine[0] if mine else 0), total[0]
+
+    def add_usage(self, user_id: int) -> None:
+        day = date.today().isoformat()
+        self.conn.execute(
+            "INSERT INTO usage (day, user_id, count) VALUES (?, ?, 1) "
+            "ON CONFLICT(day, user_id) DO UPDATE SET count = count + 1",
+            (day, user_id),
+        )
+        self.conn.commit()
